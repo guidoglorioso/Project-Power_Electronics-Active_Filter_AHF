@@ -30,7 +30,7 @@ def calcular_thd(signal, fs):
     fs (float): Frecuencia de muestreo de la señal.
 
     Returns:
-    float: THD de la señal.
+    float: THD de la señal...
     """
     # Calcular la FFT de la señal
     fft_signal = fft(signal)
