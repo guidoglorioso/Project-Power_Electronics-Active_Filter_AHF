@@ -4,7 +4,7 @@
 
 ## Overview
 
-Provide a brief description of your project here. Explain what the project is about, its objectives, and any relevant background information. This section should give a high-level overview of the project's purpose and goals.
+Code repository for the project "Active Filter for Harmonic Distortion" of the subject "Power Electronics" at the Technological University of Buenos Aires. This project focuses on designing and implementing an Active Harmonic Filter (AHF) to mitigate harmonic distortion in electrical power systems, thereby improving power quality and efficiency.
 
 ## Project Structure
 
@@ -75,9 +75,8 @@ List any software, libraries, or tools required to work on the project.
 
 ### Installation
 
-Step-by-step guide on how to install and set up the project. Include any commands that need to be run.
 
 ```sh
-# Example
-git clone https://github.com/yourusername/project.git
-cd project
+
+git clone https://github.com/guidoglorioso/Project-Power_Electronics-Active_Filter_AHF.git
+cd Project-Power_Electronics-Active_Filter_AHF
