@@ -172,9 +172,9 @@ from IPython.display import display, clear_output
 import threading
 import time
 #Funciones para procesamiento y ploteo
-def plot_signals(time,signal,correccion,signal_corregida,axs,fig):
+def plot_signals(time,signal,correccion,signal_corregida,fs,axs,fig):
     clear_output(wait=True)
-    axs[0].clear(),axs[1].clear(),axs[2].clear()
+    axs[0].clear(),axs[1].clear(),axs[2].clear(),axs[3].clear()
         # Graficar Señal Medida
     axs[0].plot(time, signal, label='Señal Medida', color='b')
     axs[0].set_title('Señal Medida')
@@ -196,6 +196,13 @@ def plot_signals(time,signal,correccion,signal_corregida,axs,fig):
     axs[2].set_ylabel('Tensión')
     axs[2].grid(True)
 
+    ## FFT
+    fft_signal, freq = get_FFT(signal_corregida,fs)
+    axs[3].plot(freq, fft_signal, label='Señal Corregida FFT', color='r')
+    axs[3].set_title('Señal Corregida FFT')
+    axs[3].set_xlabel('Freq')
+    axs[3].set_ylabel('Tensión')
+    axs[3].grid(True)
     # Ajustar el layout
     plt.tight_layout()
     
@@ -212,7 +219,7 @@ def get_signal(dev,fs): # Devuelve el valor medido en el canal 1
 def get_fundamental_FFT(values,time, fs,f_esperada):
    
     # Ventana para evitar leakege
-    window_hamm = np.hamming(len(values))
+    window_hamm = np.ones(len(values))#np.hamming(len(values)) # Le saque la ventana !!!!!
     _values = values * window_hamm
 
     # Calcular la FFT de la señal     
@@ -248,3 +255,24 @@ def get_correccion(signal,fundamental):
     corregida = signal - correccion
 
     return correccion,corregida
+
+def get_FFT(values,fs):
+     # Ventana para evitar leakege
+    window_hamm = np.ones(len(values))#np.hamming(len(values))
+    _values = values * window_hamm
+
+    # Calcular la FFT de la señal     
+    fft_signal = np.fft.fft(_values)
+
+    # Calcular las frecuencias correspondientes a las muestras de la FFT
+    frequencies = np.fft.fftfreq(len(fft_signal), 1/fs)
+
+    # normalizo la señal
+    fft_signal = fft_signal/ len(fft_signal)
+
+    #Elimino la mitad del esprectro 
+    fft_signal = fft_signal[0:int(len(fft_signal)/2)]
+    fft_signal = np.abs(fft_signal)
+    freq = frequencies[0:len(fft_signal)]
+
+    return fft_signal,freq
