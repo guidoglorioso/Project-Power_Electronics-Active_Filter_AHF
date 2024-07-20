@@ -62,35 +62,35 @@ def calcular_thd(signal, fs):
     return thd
 
 
-def plot_signals(voltage_signal, current_signal, fs=1000):
-    # Calcular el tiempo para el eje x
-    duration = len(voltage_signal) / fs
-    t = np.linspace(0, duration, len(voltage_signal))
+# def plot_signals(voltage_signal, current_signal, fs=1000):
+#     # Calcular el tiempo para el eje x
+#     duration = len(voltage_signal) / fs
+#     t = np.linspace(0, duration, len(voltage_signal))
     
-    # Crear la figura y los ejes
-    plt.figure(figsize=(10, 6))
+#     # Crear la figura y los ejes
+#     plt.figure(figsize=(10, 6))
     
-    # Graficar la señal de tensión
-    plt.subplot(2, 1, 1)
-    plt.plot(t, voltage_signal, label='Tensión')
-    plt.xlabel('Tiempo [s]')
-    plt.ylabel('Amplitud')
-    plt.title('Señal de Tensión')
-    plt.grid(True)
-    plt.legend()
+#     # Graficar la señal de tensión
+#     plt.subplot(2, 1, 1)
+#     plt.plot(t, voltage_signal, label='Tensión')
+#     plt.xlabel('Tiempo [s]')
+#     plt.ylabel('Amplitud')
+#     plt.title('Señal de Tensión')
+#     plt.grid(True)
+#     plt.legend()
     
-    # Graficar la señal de corriente
-    plt.subplot(2, 1, 2)
-    plt.plot(t, current_signal, label='Corriente', color='orange')
-    plt.xlabel('Tiempo [s]')
-    plt.ylabel('Amplitud')
-    plt.title('Señal de Corriente')
-    plt.grid(True)
-    plt.legend()
+#     # Graficar la señal de corriente
+#     plt.subplot(2, 1, 2)
+#     plt.plot(t, current_signal, label='Corriente', color='orange')
+#     plt.xlabel('Tiempo [s]')
+#     plt.ylabel('Amplitud')
+#     plt.title('Señal de Corriente')
+#     plt.grid(True)
+#     plt.legend()
     
-    # Ajustar el diseño y mostrar la gráfica
-    plt.tight_layout()
-    plt.show()
+#     # Ajustar el diseño y mostrar la gráfica
+#     plt.tight_layout()
+#     plt.show()
 
 # Calculo de fp
 def calculate_fp(tension, corriente, fs):
@@ -163,3 +163,88 @@ def get_zeros_indices(signal):
         previous = value        
     
     return indices
+
+
+## Funciones correccion
+import numpy as np
+import matplotlib.pyplot as plt
+from IPython.display import display, clear_output
+import threading
+import time
+#Funciones para procesamiento y ploteo
+def plot_signals(time,signal,correccion,signal_corregida,axs,fig):
+    clear_output(wait=True)
+    axs[0].clear(),axs[1].clear(),axs[2].clear()
+        # Graficar Señal Medida
+    axs[0].plot(time, signal, label='Señal Medida', color='b')
+    axs[0].set_title('Señal Medida')
+    axs[0].set_xlabel('Tiempo')
+    axs[0].set_ylabel('Tensión')
+    axs[0].grid(True)
+
+    # Graficar Señal de Corrección
+    axs[1].plot(time, correccion, label='Señal de Corrección', color='g')
+    axs[1].set_title('Señal de Corrección')
+    axs[1].set_xlabel('Tiempo')
+    axs[1].set_ylabel('Tensión')
+    axs[1].grid(True)
+
+    # Graficar Señal Corregida
+    axs[2].plot(time, signal_corregida, label='Señal Corregida', color='r')
+    axs[2].set_title('Señal Corregida')
+    axs[2].set_xlabel('Tiempo')
+    axs[2].set_ylabel('Tensión')
+    axs[2].grid(True)
+
+    # Ajustar el layout
+    plt.tight_layout()
+    
+    # Mostrar la gráfica
+    display(fig)
+
+
+def get_signal(dev,fs): # Devuelve el valor medido en el canal 1
+    dev.set_sampling(fs)  # maximo 40k a la entrada poner un filtro pasa bajos en 30k
+    frames = dev.fetch()
+    return frames.x() ,frames.y()[0] #tiempo,  Valores
+
+
+def get_fundamental_FFT(values,time, fs,f_esperada):
+   
+    # Ventana para evitar leakege
+    window_hamm = np.hamming(len(values))
+    _values = values * window_hamm
+
+    # Calcular la FFT de la señal     
+    fft_signal = np.fft.fft(_values)
+
+    # Calcular las frecuencias correspondientes a las muestras de la FFT
+    frequencies = np.fft.fftfreq(len(fft_signal), 1/fs)
+
+    # normalizo la señal
+    fft_signal = fft_signal/ len(fft_signal)
+
+    #Elimino la mitad del esprectro 
+    fft_signal = fft_signal[0:int(len(fft_signal)/2)]
+    fft_signal = np.abs(fft_signal)
+    freq = frequencies[0:len(fft_signal)]
+
+    # Busco la componente fundamental medida, evito "suponer una frecuencia" ya que puede variar en la linea
+    resolucion = freq[1]-freq[0] # Obtengo el delta entre mediciones de f
+    indice = f_esperada / resolucion # Aproximo la cantidad de muestras hasta la fundamental teorica
+    slice_amp = fft_signal[int(indice * 0.35):int(indice * 1.65)] # Busco a la fundamental en las cercania de la fc esperada
+    slice_freq = freq[int(indice * 0.35):int(indice * 1.65)]
+    indice =  np.argmax(slice_amp) # Encuentro el pico maximo
+    fundamental_value = slice_amp[indice] 
+    fundamental_freq = slice_freq[indice] # Frecuencia del pico maximo
+    fundamental_signal =  fundamental_value*np.sin(time*fundamental_freq*2*np.pi)
+
+    return fundamental_signal
+
+def get_correccion(signal,fundamental):
+        
+    correccion = signal - fundamental ## Puedo hacer esto por que "values_i" es la señal medida con trigger, por lo que puedo ponerme en fase.
+
+    corregida = signal - correccion
+
+    return correccion,corregida
