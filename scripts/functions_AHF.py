@@ -38,6 +38,8 @@ def calcular_thd(signal, fs):
 
     # Calcular la FFT de la señal     
     fft_signal = np.fft.fft(signal_window)
+    # normalizo la señal
+    fft_signal = fft_signal / len(fft_signal)
 
     # Calcular las frecuencias correspondientes a las muestras de la FFT
     frequencies = np.fft.fftfreq(len(fft_signal), 1/fs)
@@ -45,16 +47,15 @@ def calcular_thd(signal, fs):
     #Elimino la mitad del esprectro asi como su continua
     fft_signal = fft_signal[1:int(len(fft_signal)/2)]
     frequencies = frequencies[1:len(fft_signal)]
-    plt.plot
    
     # Encontrar el índice del pico más alto en la magnitud de la FFT (excluyendo la frecuencia DC)
-    fundamental_index = np.argmax(np.abs(fft_signal[1:])) + 1 # El +1 representa la posicion que elimino al sacar la continua
+    fundamental_index = np.argmax(np.abs(fft_signal)) + 1 # El +1 representa la posicion que elimino al sacar la continua
 
     # Obtener la magnitud de la componente fundamental
     fundamental_magnitude = np.abs(fft_signal[fundamental_index])
 
     # Calcular la magnitud de las componentes armónicas
-    harmonic_magnitudes = np.abs(fft_signal[fundamental_index +1:])
+    harmonic_magnitudes = np.abs(fft_signal[fundamental_index + 1:])
 
     # Calcular el THD
     thd = np.sqrt(np.sum(harmonic_magnitudes**2)) / fundamental_magnitude
@@ -218,8 +219,9 @@ def get_signal(dev,fs): # Devuelve el valor medido en el canal 1
 
 def get_fundamental_FFT(values,time, fs,f_esperada):
    
-    # Ventana para evitar leakege
-    window_hamm = np.ones(len(values))#np.hamming(len(values)) # Le saque la ventana !!!!!
+    # NOTA: no pongo ventana ya que no es de interes ver todo el espectro bien, solo encontrar la fundamental sin que se atenue.
+    
+    window_hamm = np.ones(len(values))#np.hamming(len(values)) 
     _values = values * window_hamm
 
     # Calcular la FFT de la señal     
@@ -257,7 +259,8 @@ def get_correccion(signal,fundamental):
     return correccion,corregida
 
 def get_FFT(values,fs):
-     # Ventana para evitar leakege
+
+    # Ventana para evitar leakege
     window_hamm = np.ones(len(values))#np.hamming(len(values))
     _values = values * window_hamm
 
