@@ -1,6 +1,4 @@
-# Template-proyectos
-
-# Project Title
+# Filtro Activo de Armónicos de Corriente
 
 ## Overview
 
